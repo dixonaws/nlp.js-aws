@@ -1,0 +1,10 @@
+/coverage
+node_modules
+/client/build
+
+.DS_Store
+.env
+.vscode
+.idea
+npm-debug.log
+
