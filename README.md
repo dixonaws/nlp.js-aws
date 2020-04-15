@@ -5,6 +5,8 @@
 # NLP.js App
 Application to train your agents for bots, done using NLP.js.
 
+Based on https://github.com/axa-group/nlp.js-app
+
 34 languages supported: Arabic (ar), Armenian (hy), Bengali (bn), Basque (eu), Catala (ca), Chinese (zh), Czech (cs), Danish (da), Dutch (nl), English (en), Farsi (fa), Finnish (fi), French (fr), Galician (gl), German (de), Greek (el), Hindi (hi), Hungarian (hu), Indonesian (id), Irish (ga), Italian (it), Japanese (ja), Norwegian (no), Portuguese (pt), Romanian (ro), Russian (ru), Slovene (sl), Spanish (es), Swedish (sv), Tagalog (tl), Tamil (ta), Thai (th), Turkish (tr), Ukrainian (uk)
 
 <div align="center">
@@ -26,12 +28,11 @@ Application to train your agents for bots, done using NLP.js.
 
 ## Installation
 To deploy in AWS, follow these steps:
-1. Clone the nlp.js serverless feature branch from github
-https://github.com/axa-group/nlp.js-app/tree/feature/serverless
+### 1. Clone this repo 
+https://github.com/dixonaws/nlp.js-aws
 
-2. Adjust the serverless.yml 
-Edit the provider section to point to your desired region (I use us-east-1 for testing, 
-but should also work in other regions with Lambda, Dynamo, API-GW)
+### 2. Adjust serverless.yml 
+Edit the provider section to point to your desired AWS region 
 
 ```yaml
 provider:
@@ -42,22 +43,21 @@ provider:
   role: !GetAtt nlpjsLambdaExecutionRole.Arn
 ```
 
-3. Edit the .env file in the project root
+### 3. Edit the .env file in the project root
 My .env file is as follows:
-
 ```
 NODE_ENV=production
 LOG_LEVEL=info
 SERVERLESS=true
 ```
 
-4. Download required libraries
+### 4. Download required libraries
 Run ```npm install```
 
-5. Deploy the backend Dynamo, S3, Cloudfront, API-GW, IAM policies. This command will run a CloudFormation stack and output an API endpoint.
+### 5. Deploy the backend Dynamo, S3, Cloudfront, API-GW, IAM policies. This command will run a CloudFormation stack and output an API endpoint.
 Run ```npx serverless deploy```
 
-6. Adjust public/swagger2.json
+### 6. Adjust public/swagger2.json
 Replace the basePath value in <project root>/public/swagger2.json with the endpoint from Step 5
 
 The first block in my swagger2.json looks like this:
@@ -72,40 +72,12 @@ The first block in my swagger2.json looks like this:
   },
 ```
 
-7. Deploy the training app
+### 7. Deploy the training app
 Run ```serverless client deploy``` from the project root
 
 This command will copy the assets from <project root>/public to the S3 bucket that was created in Step 6. You should now be able to reach the training app through the cloudfront distribution (output from the cloudformation stack in Step 6).
 
 
-### Running in a different port
-
-Example of application running in port 3010:
-
-./.env
-```
-NODE_ENV=development
-MONGO_URL=mongodb://localhost:27017/nlpjs
-LOG_LEVEL=debug
-PORT=3010
-```
-
-./client/.env
-```
-SETTINGS_URL=http://localhost:3010
-API_URL=http://localhost:3010
-PUBLIC_PATH_PREFIX=
-```
-
-Then, replace "public" folder content:
-```
-cd client
-npm run build
-cd ..
-mv public public_old
-mv client/build public
-npm start
-```
 
 ## Example of use
 
