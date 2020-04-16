@@ -1,80 +1,69 @@
-AWSTemplateFormatVersion: "2010-09-09"
-Description: (SOxxxx) - The AWS CloudFormation template for deployment of the nlp.js solution. Version v1.0.
-
-Mappings:
-    SourceCode:
-        General:
-            S3Bucket: "dixonaws-solutions"
-            KeyPrefix: "nlpjs/v1.0"
-
+AWSTemplateFormatVersion: 2010-09-09
+Description: The AWS CloudFormation template for this Serverless application
 Resources:
-# --- Lambda functions and related IAM policies
-
-  ServerLambdaFunction:
-    Type: AWS::Lambda::Function
+  ServerlessDeploymentBucket:
+    Type: 'AWS::S3::Bucket'
     Properties:
-      Description: "nlp.js serverless Lambda function"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+  ServerlessDeploymentBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref ServerlessDeploymentBucket
+      PolicyDocument:
+        Statement:
+          - Action: 's3:*'
+            Effect: Deny
+            Principal: '*'
+            Resource:
+              - !Join
+                - ''
+                - - 'arn:'
+                  - !Ref 'AWS::Partition'
+                  - ':s3:::'
+                  - !Ref ServerlessDeploymentBucket
+                  - /*
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+  ServerLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: /aws/lambda/nlpjs-serverless-dev-server
+  ServerLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
       Code:
-        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "nlpjs-serverless.zip"]]
+        S3Bucket: !Ref ServerlessDeploymentBucket
+        S3Key: >-
+          serverless/nlpjs-serverless/dev/1586955618205-2020-04-15T13:00:18.205Z/nlpjs-serverless.zip
+      FunctionName: nlpjs-serverless-dev-server
       Handler: _lalalambda/server.handler
-      Role:
-        Fn::GetAtt: [ nlpjsLambdaExecutionRole , "Arn" ]
+      MemorySize: 1024
+      Role: !GetAtt
+        - nlpjsLambdaExecutionRole
+        - Arn
       Runtime: nodejs12.x
       Timeout: 6
-      MemorySize: 1024
-
-  nlpjsLambdaExecutionRole:
-    Type: 'AWS::IAM::Role'
+    DependsOn:
+      - ServerLogGroup
+      - nlpjsLambdaExecutionRole
+  ServerLambdaVersion6mTjHDqgqPT7LOKBFT2QMojOgJNS0yvjdrzGysESlg:
+    Type: 'AWS::Lambda::Version'
+    DeletionPolicy: Retain
     Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Path: /
-      Policies:
-        - PolicyName: nlpjsLambdaExecutionPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "dynamodb:GetItem"
-                  - "dynamodb:UpdateItem"
-                  - "dynamodb:PutItem"
-                  - "dynamodb:Query"
-                  - "dynamodb:Scan"
-                Resource:
-                  - !GetAtt agentsTable.Arn
-                  - !GetAtt domainsTable.Arn
-                  - !GetAtt entitysTable.Arn
-                  - !GetAtt intentsTable.Arn
-                  - !GetAtt scenariosTable.Arn
-                  - !GetAtt sessionsTable.Arn
-                  - !GetAtt settingsTable.Arn
-                  - !GetAtt trainingsTable.Arn
-              - Effect: Allow
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                Resource:
-                  - "arn:aws:logs:*:*:*"
-
-# --- API Gateway resources
+      FunctionName: !Ref ServerLambdaFunction
+      CodeSha256: X3sfjMc9/6yAiwO79xgwMFXvj0E328U2kfDi+CiS5RI=
   ApiGatewayRestApi:
-      Type: 'AWS::ApiGateway::RestApi'
-      Properties:
-        Name: dev-nlpjs-serverless
-        EndpointConfiguration:
-          Types:
-            - EDGE
-        Policy: ''
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: dev-nlpjs-serverless
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Policy: ''
   ApiGatewayResourceProxyVar:
     Type: 'AWS::ApiGateway::Resource'
     Properties:
@@ -133,7 +122,7 @@ Resources:
               - Arn
             - /invocations
       MethodResponses: []
-  ApiGatewayDeployment:
+  ApiGatewayDeployment1586955571965:
     Type: 'AWS::ApiGateway::Deployment'
     Properties:
       RestApiId: !Ref ApiGatewayRestApi
@@ -160,23 +149,13 @@ Resources:
           - ':'
           - !Ref ApiGatewayRestApi
           - /*/*
-
-# --- S3 resources
-
   TrainingAppBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Delete
+    Type: 'AWS::S3::Bucket'
     Properties:
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: True
-        BlockPublicPolicy: True
-        IgnorePublicAcls: True
-        RestrictPublicBuckets: True
       CorsConfiguration:
         CorsRules:
-          -
-            AllowedOrigins:
-              - "*"
+          - AllowedOrigins:
+              - '*'
             AllowedMethods:
               - POST
               - GET
@@ -184,24 +163,20 @@ Resources:
               - DELETE
               - HEAD
             AllowedHeaders:
-              - "*"
+              - '*'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
       AccessControl: Private
-      #BucketName: !Join ["", ["nlpjs-training-app-", Ref: "AWS::Region", "-", Ref: "AWS::AccountId"]]
-
-# --- Cloudfront resources
-
+      BucketName: nlp-training-app-bucket-9april2020-2
   CloudFrontOriginAccessIdentity:
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub 'CloudFront OAI for nlp.js training app hosting bucket'
-
+        Comment: !Sub CloudFront OAI for nlp.js training app hosting bucket
   CloudFrontDistribution:
-    Type: AWS::CloudFront::Distribution
+    Type: 'AWS::CloudFront::Distribution'
     Properties:
       DistributionConfig:
         DefaultCacheBehavior:
@@ -221,32 +196,37 @@ Resources:
         Enabled: true
         HttpVersion: http2
         Origins:
-          - DomainName: !Join ['', [!Ref TrainingAppBucket, '.s3.amazonaws.com']]
+          - DomainName: !Join
+              - ''
+              - - !Ref TrainingAppBucket
+                - .s3.amazonaws.com
             Id: nlp-training-app-bucket-9april2020-2
             S3OriginConfig:
-              OriginAccessIdentity:
-                !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
+              OriginAccessIdentity: !Join
+                - ''
+                - - origin-access-identity/cloudfront/
+                  - !Ref CloudFrontOriginAccessIdentity
         PriceClass: PriceClass_All
-
-# --- S3 resources
-
   BucketPolicy:
-    Type: AWS::S3::BucketPolicy
+    Type: 'AWS::S3::BucketPolicy'
     Properties:
       Bucket: !Ref TrainingAppBucket
       PolicyDocument:
         Statement:
           - Action:
-              - s3:GetObject
+              - 's3:GetObject'
             Effect: Allow
-            Resource: !Join ['', ['arn:aws:s3:::', !Ref TrainingAppBucket, '/*']]
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref TrainingAppBucket
+                - /*
             Principal:
-              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
-
-# --- DynamoDB resources
-
+              CanonicalUser: !GetAtt
+                - CloudFrontOriginAccessIdentity
+                - S3CanonicalUserId
   agentsTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: agents
       AttributeDefinitions:
@@ -254,13 +234,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
   domainsTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: domains
       AttributeDefinitions:
@@ -268,13 +247,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
   entitysTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: entitys
       AttributeDefinitions:
@@ -282,13 +260,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
   intentsTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: intents
       AttributeDefinitions:
@@ -296,13 +273,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
   scenariosTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: scenarios
       AttributeDefinitions:
@@ -310,13 +286,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
   sessionsTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: sessions
       AttributeDefinitions:
@@ -324,13 +299,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
   settingsTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: settings
       AttributeDefinitions:
@@ -338,13 +312,12 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
   trainingsTable:
-    Type: AWS::DynamoDB::Table
+    Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: trainings
       AttributeDefinitions:
@@ -352,8 +325,81 @@ Resources:
           AttributeType: S
       KeySchema:
         - AttributeName: id
-          KeyType: HASH # partition key
+          KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
-
+  nlpjsLambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: nlpjsLambdaExecutionPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:Scan'
+                Resource:
+                  - !GetAtt
+                    - agentsTable
+                    - Arn
+                  - !GetAtt
+                    - domainsTable
+                    - Arn
+                  - !GetAtt
+                    - entitysTable
+                    - Arn
+                  - !GetAtt
+                    - intentsTable
+                    - Arn
+                  - !GetAtt
+                    - scenariosTable
+                    - Arn
+                  - !GetAtt
+                    - sessionsTable
+                    - Arn
+                  - !GetAtt
+                    - settingsTable
+                    - Arn
+                  - !GetAtt
+                    - trainingsTable
+                    - Arn
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - 'arn:aws:logs:*:*:*'
+Outputs:
+  ServerlessDeploymentBucketName:
+    Value: !Ref ServerlessDeploymentBucket
+  ServerLambdaFunctionQualifiedArn:
+    Description: Current Lambda function version
+    Value: !Ref ServerLambdaVersion6mTjHDqgqPT7LOKBFT2QMojOgJNS0yvjdrzGysESlg
+  ServiceEndpoint:
+    Description: URL of the service endpoint
+    Value: !Join
+      - ''
+      - - 'https://'
+        - !Ref ApiGatewayRestApi
+        - .execute-api.
+        - !Ref 'AWS::Region'
+        - .
+        - !Ref 'AWS::URLSuffix'
+        - /dev
