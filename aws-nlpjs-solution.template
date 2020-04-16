@@ -67,6 +67,7 @@ Resources:
                   - "arn:aws:logs:*:*:*"
 
 # --- API Gateway resources
+
   ApiGatewayRestApi:
       Type: 'AWS::ApiGateway::RestApi'
       Properties:
@@ -208,7 +209,7 @@ Resources:
           Compress: true
           ForwardedValues:
             QueryString: false
-          TargetOriginId: nlp-training-app-bucket-9april2020-2
+          TargetOriginId: !Ref TrainingAppBucket
           ViewerProtocolPolicy: redirect-to-https
           CachedMethods:
             - GET
@@ -217,12 +218,16 @@ Resources:
             - GET
             - HEAD
             - OPTIONS
+            - PUT
+            - POST
+            - DELETE
+            - PATCH
         DefaultRootObject: index.html
         Enabled: true
         HttpVersion: http2
         Origins:
           - DomainName: !Join ['', [!Ref TrainingAppBucket, '.s3.amazonaws.com']]
-            Id: nlp-training-app-bucket-9april2020-2
+            Id: !Ref TrainingAppBucket
             S3OriginConfig:
               OriginAccessIdentity:
                 !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
@@ -357,3 +362,17 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
 
+# --- Outputs section
+
+Outputs:
+  TrainingBucket:
+    Description: S3 bucket that hosts the training application
+    Value: !Ref TrainingAppBucket
+
+  TrainingAppUrl:
+    Description: Public Cloudfront URL to access the training application
+    Value: !GetAtt CloudFrontDistribution.DomainName
+
+  ServiceEndpoint:
+    Description: URL of the service endpoint
+    Value: !Join ["", ["https://", Ref: ApiGatewayRestApi, ".execute-api.", Ref: "AWS::Region", ".amazonaws.com/dev"]]
