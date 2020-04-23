@@ -5,6 +5,7 @@ venv3/
 venv/
 .venv3/
 lambda_function.zip
+dist/
 
 .DS_Store
 .env
