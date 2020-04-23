@@ -4,7 +4,7 @@ node_modules
 venv3/
 venv/
 .venv3/
-deployment/
+lambda_function.zip
 
 .DS_Store
 .env
