@@ -40,7 +40,7 @@ Mappings:
 Create an S3 bucket and a directory within it to store the source code for this solution.
 Copy the following files to that directory:
 - lambda_function.zip: Lambda deployment package for the custom resource helper
-- public.zip: source code for the training application
+- nlpjs-trainingapp.zip: source code for the training application
 
 ### 2. Deploy the cloudformation template
 Per usual in AWS. Tested in us-east-1
