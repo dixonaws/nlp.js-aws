@@ -7,6 +7,3 @@ zip -r9 ${OLDPWD}/lambda_function.zip .
 cd ${OLDPWD}
 zip -g lambda_function.zip lambda_function.py
 zip -g lambda_function.zip requirements.txt
-
-# deploy it to S3
-aws s3 cp lambda_function.zip s3://dixonaws-solutions-us-east-1/nlpjs/v1.0/lambda_function.zip
