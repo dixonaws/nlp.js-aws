@@ -66,6 +66,90 @@ Resources:
                 Resource:
                   - "arn:aws:logs:*:*:*"
 
+  InvokeDeployTrainingApp:
+    Type: Custom::InvokeDeployTrainingApp
+    DependsOn: TrainingAppBucket
+    DeletionPolicy: Delete
+    Properties:
+      ServiceToken: !GetAtt CustomResource.Arn
+      SrcBucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
+      SrcPath: !FindInMap ["SourceCode", "General", "KeyPrefix"]
+      TrainingAppPackage: nlpjs-trainingapp.zip
+      NewBaseApiPath: !Join ["", ["https://", Ref: ApiGatewayRestApi, ".execute-api.", Ref: "AWS::Region", ".amazonaws.com/dev/api"]]
+      DestBucket: !Ref TrainingAppBucket
+
+  CustomResource:
+    DependsOn: TrainingAppBucket
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: CFN Lambda backed custom resource to deploy assets to s3
+      Handler: lambda_function.lambda_handler
+      Role: !GetAtt LambdaCustomRole.Arn
+      Code:
+        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "lambda_function.zip"]]
+      Runtime:  python3.7
+      Timeout: 120
+      Tags:
+        - Key: SolutionId
+          Value: Sxxxxx
+
+  LambdaCustomRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        -
+          PolicyName: !Sub ${AWS::StackName}-custom-resource-policy
+          PolicyDocument:
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/*
+              -
+                Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub ${TrainingAppBucket.Arn}/*
+              -
+                Effect: Allow
+                Action:
+                  - s3:PutBucketNotification
+                Resource:
+                  - !Sub ${TrainingAppBucket.Arn}
+              -
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Join ["", ["arn:aws:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region","/*"]]
+              -
+                Effect: Allow
+                Action:
+                  - cloudformation:SignalResource
+                Resource: !Ref AWS::StackId
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "/* required to get/put objects to Amazon S3"
+
+
 # --- API Gateway resources
 
   ApiGatewayRestApi:
@@ -202,6 +286,7 @@ Resources:
         Comment: !Sub 'CloudFront OAI for nlp.js training app hosting bucket'
 
   CloudFrontDistribution:
+    DependsOn: InvokeDeployTrainingApp
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
