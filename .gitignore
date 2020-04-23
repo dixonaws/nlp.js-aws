@@ -2,6 +2,9 @@
 node_modules
 /client/build
 /build
+venv3/
+venv/
+deployment/
 
 .DS_Store
 .env
