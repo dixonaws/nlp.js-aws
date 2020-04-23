@@ -28,59 +28,25 @@ Based on https://github.com/axa-group/nlp.js-app
 
 ## Installation
 To deploy in AWS, follow these steps:
-### 1. Clone this repo 
-https://github.com/dixonaws/nlp.js-aws
-
-### 2. Adjust serverless.yml 
-Edit the provider section to point to your desired AWS region 
-
+### 1. Adjust the Cloudformation template  
 ```yaml
-provider:
-  name: aws
-  runtime: nodejs12.x
-  region: us-east-1
-  stage: dev
-  role: !GetAtt nlpjsLambdaExecutionRole.Arn
+Mappings:
+    SourceCode:
+        General:
+            S3Bucket: "dixonaws-solutions"
+            KeyPrefix: "nlpjs/v1.0"
 ```
 
-### 3. Edit the .env file in the project root
-My .env file is as follows:
-```
-NODE_ENV=production
-LOG_LEVEL=info
-SERVERLESS=true
-```
+Create an S3 bucket and a directory within it to store the source code for this solution.
+Copy the following files to that directory:
+- lambda_function.zip: Lambda deployment package for the custom resource helper
+- public.zip: source code for the training application
 
-### 4. Download required libraries
-Run ```npm install```
-
-### 5. Deploy the backend Dynamo, S3, Cloudfront, API-GW, IAM policies. This command will run a CloudFormation stack and output an API endpoint.
-Run ```npx serverless deploy```
-
-### 6. Adjust public/swagger2.json
-Replace the basePath value in <project root>/public/swagger2.json with the endpoint from Step 5
-
-The first block in my swagger2.json looks like this:
-```json
-{
-  "swagger": "2.0",
-  "basePath": "https://zc42uapruh.execute-api.us-east-1.amazonaws.com/dev/api",
-  "schemes": ["https"],
-  "info": {
-    "title": "NLP.js API Documentation",
-    "version": "0.0.1"
-  },
-```
-
-### 7. Deploy the training app
-Run ```serverless client deploy``` from the project root
-
-This command will copy the assets from <project root>/public to the S3 bucket that was created in Step 6. You should now be able to reach the training app through the cloudfront distribution (output from the cloudformation stack in Step 6).
-
+### 2. Deploy the cloudformation template
+Per usual in AWS. Tested in us-east-1
 
 
 ## Example of use
-
 You can create an agent:
 
 <div align="center">
