@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# build the components needed to launch the cloudformation stack: package the lambda custom resource and the training app
+# build the components needed to launch the Cloudformation stack: package the lambda custom resource and the training app
 # both the lambda custom resource and the training app are copied to the dist folder
-# this script should be run from the root of the respository
+# this script should be run from the root of the repository
 
 BASEDIR=$(pwd)
 
