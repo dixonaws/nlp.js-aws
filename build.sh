@@ -9,7 +9,7 @@ BASEDIR=$(pwd)
 # create a package for the custom resource and copy it to dist
 cd deployment/custom-resource
 ./package_lambda_function.sh
-mv lambda_function.zip dist
+mv lambda_function.zip $BASEDIR/dist
 cd $BASEDIR
 
 # create a package for the training app and copy it to dist
