@@ -3,7 +3,7 @@ node_modules
 /client/build
 venv3/
 venv/
-.venv3
+.venv3/
 deployment/
 
 .DS_Store
