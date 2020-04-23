@@ -7,14 +7,23 @@
 BASEDIR=$(pwd)
 
 # create a package for the custom resource and copy it to dist
+echo -n "Packaging Lambda custom resource... "
 cd deployment/custom-resource
-./package_lambda_function.sh
+./package_lambda_function.sh > /dev/null
+echo "done."
+
+echo -n "Moving lambda_function.zip to dist... "
 mv lambda_function.zip $BASEDIR/dist
+echo "done."
+
 cd $BASEDIR
 
 # create a package for the training app and copy it to dist
-zip -r nlpjs-trainingapp.zip public/
-mv nlpjs-trainingapp.zip dist
+echo -n "Packaging training app... "
+zip -r nlpjs-trainingapp.zip public/ > /dev/null
+echo " done."
 
-# deploy to s3
-# aws s3 cp lambda_function.zip s3://dixonaws-solutions-us-east-1/nlpjs/v1.0/lambda_function.zip
+echo -n "Moving nlpjs-trainingapp.zip to dist... "
+mv nlpjs-trainingapp.zip dist
+echo "done."
+
