@@ -6,6 +6,15 @@
 
 BASEDIR=$(pwd)
 
+echo -n "Checking for dist... "
+if [[ -d "dist" ]]
+then
+  echo "dist/ exists"
+else
+  echo "dist/ does not exist, creating."
+  mkdir dist
+fi
+
 # create a package for the custom resource and copy it to dist
 echo -n "Packaging Lambda custom resource... "
 cd deployment/custom-resource
