@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: (SOxxxx) - The AWS CloudFormation template for deployment of the nlp.js solution. Version v1.0.
+
+Mappings:
+    ResourceServer:
+      General:
+        Identifier: "https://nlpjsapigatewayendpoint.com/dev"
+        ScopeName: "TrainingApp.Configure"
+        Description: "API endpoint to configure and test the NLP.js training app"
+
+Resources:
+
+# --- Cognito resources
+  NLPCognitoUserPool:
+    Type: AWS::Cognito::UserPool
+
+  NLPCognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref NLPCognitoUserPool
+      Domain: !Ref AWS::StackName
+
+  NLPCognitoUserPoolClient:
+    # DependsOn: CloudFrontDistribution
+    DependsOn: NLPUserPoolResourceServer
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows:
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - aws.cognito.signin.user.admin
+        - profile
+        # - !Ref NLPUserPoolResourceServer
+        # - !Join ["/", [!Ref NLPUserPoolResourceServer, !GetAtt NLPUserPoolResourceServer.Scopes.ScopeName] ]
+        # - "https://nlpjsapigatewayendpoint.com/dev/TrainingApp.Configure"
+        # - !Join ["/", [!FindInMap ["ResourceServer", "General", "Identifier"], [!FindInMap ["ResourceServer", "General", "ScopeName"] ]]]
+        - "https://nlpjsapigatewayendpoint.com/dev/TrainingApp.Configure"
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        # - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/index.html"] ]
+        - !Join ["", ["https://", "nlpjscloudfrontdomainname.cloudfront.net", "/index.html"] ]
+      ClientName: nlpjswebauth
+      GenerateSecret: false
+      LogoutURLs:
+        # - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/logout.html"] ]
+        - !Join ["", ["https://", "nlpjscloudfrontdomainname.cloudfront.net", "/logout.html"] ]
+      SupportedIdentityProviders:
+        - COGNITO
+      UserPoolId: !Ref NLPCognitoUserPool
+
+  NLPUserPoolResourceServer:
+    Type: AWS::Cognito::UserPoolResourceServer
+    Properties:
+      #Identifier: [!FindInMap ["ResourceServer", "General", "Identifier"]]
+      Identifier: "nlpjsResourceServer"
+      Name: "NLPJS Training App API"
+      Scopes:
+        - ScopeName: "TrainingApp.Configure"
+          ScopeDescription: "API endpoint to configure and test the NLP.js training app"
+
+      UserPoolId: !Ref NLPCognitoUserPool
+
+# --- Outputs section

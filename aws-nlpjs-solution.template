@@ -447,6 +447,39 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
 
+# --- Cognito resources
+  NLPCognitoUserPool:
+    Type: AWS::Cognito::UserPool
+
+  NLPCognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      UserPoolId: !Ref NLPCognitoUserPool
+      Domain: !Ref AWS::StackName
+
+  NLPCognitoUserPoolClient:
+    DependsOn: CloudFrontDistribution
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows:
+        - implicit
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - aws.cognito.signin.user.admin
+        - profile
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/index.html"] ]
+      ClientName: nlpjswebauth
+      GenerateSecret: false
+      LogoutURLs:
+        - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/logout.html"] ]
+      SupportedIdentityProviders:
+        - COGNITO
+      UserPoolId: !Ref NLPCognitoUserPool
+
 # --- Outputs section
 
 Outputs:
@@ -461,3 +494,7 @@ Outputs:
   ServiceEndpoint:
     Description: URL of the service endpoint
     Value: !Join ["", ["https://", Ref: ApiGatewayRestApi, ".execute-api.", Ref: "AWS::Region", ".amazonaws.com/dev"]]
+
+  LoginUrl:
+    Description: Public login page for NLP.js training application
+    Value: !GetAtt NLPCognitoUserPoolDomain.Domain

@@ -11,9 +11,7 @@ import { push } from 'react-router-redux';
 import { setInWizard } from '../App/actions';
 
 export class HomePage extends React.PureComponent { // eslint-disable-line react/prefer-stateless-function
-
   render() {
-
     return (
       <div>
         <Header breadcrumbs={[{ label: 'Welcome: Getting Started' }]} actionButtons={<ActionButton key="CreateButton" label={messages.actionButton} onClick={this.props.onCreateAgent} />} />
