@@ -2,14 +2,13 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: (SOxxxx) - The AWS CloudFormation template for deployment of the nlp.js solution. Version v1.0.
 
 Mappings:
-    ResourceServer:
-      General:
-        Identifier: "https://nlpjsapigatewayendpoint.com/dev"
-        ScopeName: "TrainingApp.Configure"
-        Description: "API endpoint to configure and test the NLP.js training app"
+  ResourceServer:
+    Configuration:
+      Identifier: "nlpjsResourceServer"
+      ScopeName: "TrainingApp.admin"
+
 
 Resources:
-
 # --- Cognito resources
   NLPCognitoUserPool:
     Type: AWS::Cognito::UserPool
@@ -37,7 +36,8 @@ Resources:
         # - !Join ["/", [!Ref NLPUserPoolResourceServer, !GetAtt NLPUserPoolResourceServer.Scopes.ScopeName] ]
         # - "https://nlpjsapigatewayendpoint.com/dev/TrainingApp.Configure"
         # - !Join ["/", [!FindInMap ["ResourceServer", "General", "Identifier"], [!FindInMap ["ResourceServer", "General", "ScopeName"] ]]]
-        - "https://nlpjsapigatewayendpoint.com/dev/TrainingApp.Configure"
+        # todo: generate the AllowedAuthScope from variables in this template. This the proper place to allow a custom scope
+        - nlpjsResourceServer/TrainingApp.Configure
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
         # - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/index.html"] ]
@@ -47,6 +47,7 @@ Resources:
       LogoutURLs:
         # - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/logout.html"] ]
         - !Join ["", ["https://", "nlpjscloudfrontdomainname.cloudfront.net", "/logout.html"] ]
+        # todo: modify the above join statement to insert the real cloudfont domain name
       SupportedIdentityProviders:
         - COGNITO
       UserPoolId: !Ref NLPCognitoUserPool
@@ -64,3 +65,21 @@ Resources:
       UserPoolId: !Ref NLPCognitoUserPool
 
 # --- Outputs section
+Outputs:
+  Identifier:
+    Description: Identifier
+    Value: !FindInMap
+      - ResourceServer
+      - Configuration
+      - Identifier
+
+  ScopeName:
+    Description: ScopeName
+    Value: !FindInMap
+      - ResourceServer
+      - Configuration
+      - ScopeName
+
+  AllowedCustomScope:
+    Description: Combined custom scope
+    Value: !Join ["/", ["https://", "nlpjscloudfrontdomainname.cloudfront.net", "/logout.html"] ]
