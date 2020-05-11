@@ -2,13 +2,21 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: (SOxxxx) - The AWS CloudFormation template for deployment of the nlp.js solution. Version v1.0.
 
 Mappings:
-    SourceCode:
-        General:
-            S3Bucket: "dixonaws-solutions"
-            KeyPrefix: "nlpjs/v1.0"
+  SourceCode:
+    General:
+      S3Bucket: "dixonaws-solutions"
+      KeyPrefix: "nlpjs/v1.0"
+  ResourceServer:
+    Configuration:
+      Identifier: "nlpjsResourceServer"
+      ScopeName: "TrainingApp.admin"
+
+Parameters:
+  AdminEmail:
+    Type: String
 
 Resources:
-# --- Lambda functions and related IAM policies
+  # --- Lambda functions and related IAM policies
 
   ServerLambdaFunction:
     Type: AWS::Lambda::Function
@@ -100,46 +108,39 @@ Resources:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-          -
-            Effect: Allow
+          - Effect: Allow
             Principal:
               Service:
                 - lambda.amazonaws.com
             Action:
               - sts:AssumeRole
       Policies:
-        -
-          PolicyName: !Sub ${AWS::StackName}-custom-resource-policy
+        - PolicyName: !Sub ${AWS::StackName}-custom-resource-policy
           PolicyDocument:
             Statement:
-              -
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
                   !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/*
-              -
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - s3:PutObject
                 Resource:
                   - !Sub ${TrainingAppBucket.Arn}/*
-              -
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - s3:PutBucketNotification
                 Resource:
                   - !Sub ${TrainingAppBucket.Arn}
-              -
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - s3:GetObject
                 Resource:
                   - !Join ["", ["arn:aws:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region","/*"]]
-              -
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - cloudformation:SignalResource
                 Resource: !Ref AWS::StackId
@@ -150,16 +151,16 @@ Resources:
             reason: "/* required to get/put objects to Amazon S3"
 
 
-# --- API Gateway resources
+  # --- API Gateway resources
 
   ApiGatewayRestApi:
-      Type: 'AWS::ApiGateway::RestApi'
-      Properties:
-        Name: dev-nlpjs-serverless
-        EndpointConfiguration:
-          Types:
-            - EDGE
-        Policy: ''
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: dev-nlpjs-serverless
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Policy: ''
   ApiGatewayResourceProxyVar:
     Type: 'AWS::ApiGateway::Resource'
     Properties:
@@ -246,7 +247,7 @@ Resources:
           - !Ref ApiGatewayRestApi
           - /*/*
 
-# --- S3 resources
+  # --- S3 resources
 
   TrainingAppBucket:
     Type: AWS::S3::Bucket
@@ -259,8 +260,7 @@ Resources:
         RestrictPublicBuckets: True
       CorsConfiguration:
         CorsRules:
-          -
-            AllowedOrigins:
+          - AllowedOrigins:
               - "*"
             AllowedMethods:
               - POST
@@ -277,7 +277,7 @@ Resources:
       AccessControl: Private
       #BucketName: !Join ["", ["nlpjs-training-app-", Ref: "AWS::Region", "-", Ref: "AWS::AccountId"]]
 
-# --- Cloudfront resources
+  # --- Cloudfront resources
 
   CloudFrontOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
@@ -318,7 +318,7 @@ Resources:
                 !Join ['', ['origin-access-identity/cloudfront/', !Ref CloudFrontOriginAccessIdentity]]
         PriceClass: PriceClass_All
 
-# --- S3 resources
+  # --- S3 resources
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -333,7 +333,7 @@ Resources:
             Principal:
               CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
 
-# --- DynamoDB resources
+  # --- DynamoDB resources
 
   agentsTable:
     Type: AWS::DynamoDB::Table
@@ -447,9 +447,18 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
 
-# --- Cognito resources
+  # --- Cognito resources
+  # --- Cognito resources
   NLPCognitoUserPool:
     Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: True
+        InviteMessageTemplate:
+          EmailMessage: 'Your NLP.js admin username is {username} and the temporary password is {####}'
+          EmailSubject: 'Your temporary password for NLP.js Training Application'
+      AutoVerifiedAttributes:
+        - email
 
   NLPCognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
@@ -458,7 +467,8 @@ Resources:
       Domain: !Ref AWS::StackName
 
   NLPCognitoUserPoolClient:
-    DependsOn: CloudFrontDistribution
+    # DependsOn: CloudFrontDistribution
+    DependsOn: NLPUserPoolResourceServer
     Type: AWS::Cognito::UserPoolClient
     Properties:
       AllowedOAuthFlows:
@@ -469,16 +479,43 @@ Resources:
         - openid
         - aws.cognito.signin.user.admin
         - profile
+        - !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
-        - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/index.html"] ]
+        - !Join ["", [ "https://", !GetAtt CloudFrontDistribution.DomainName , "/auth.html"] ]
+        # todo: insert the callback url of the landing page in the training app
       ClientName: nlpjswebauth
       GenerateSecret: false
       LogoutURLs:
         - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/logout.html"] ]
+        # todo: modify the above join statement to insert the real cloudfont domain name as output from base template
+        # todo: create a dependency on the cloudfront distribution
       SupportedIdentityProviders:
         - COGNITO
       UserPoolId: !Ref NLPCognitoUserPool
+
+  NLPUserPoolResourceServer:
+    Type: AWS::Cognito::UserPoolResourceServer
+    Properties:
+      Identifier: !FindInMap [ResourceServer, Configuration, Identifier]
+      Name: "NLPJS Training App API"
+      UserPoolId: !Ref NLPCognitoUserPool
+      Scopes:
+        - ScopeName: !FindInMap [ResourceServer, Configuration, ScopeName]
+          ScopeDescription: "API endpoint to configure and test the NLP.js training app"
+
+  CognitoUserPoolAdmin:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      Username: admin
+      DesiredDeliveryMediums:
+        - EMAIL
+      UserPoolId:
+        Ref: NLPCognitoUserPool
+      UserAttributes:
+        - Name: email
+          Value:
+            Ref: AdminEmail
 
 # --- Outputs section
 
@@ -495,6 +532,19 @@ Outputs:
     Description: URL of the service endpoint
     Value: !Join ["", ["https://", Ref: ApiGatewayRestApi, ".execute-api.", Ref: "AWS::Region", ".amazonaws.com/dev"]]
 
-  LoginUrl:
-    Description: Public login page for NLP.js training application
-    Value: !GetAtt NLPCognitoUserPoolDomain.Domain
+  CognitoUserPool:
+    Description: User pool for the training application
+    Value: !Ref NLPCognitoUserPool
+
+  Identifier:
+    Description: Identifier
+    Value: !FindInMap [ResourceServer, Configuration, Identifier]
+
+  ScopeName:
+    Description: ScopeName
+    Value: !FindInMap [ResourceServer, Configuration, ScopeName]
+
+  AllowedCustomScope:
+    Description: Combined custom scope
+    Value: !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
+
