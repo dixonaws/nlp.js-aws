@@ -11,6 +11,9 @@ Resources:
 # --- Cognito resources
   NLPCognitoUserPool:
     Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: True
 
   NLPCognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
