@@ -7,13 +7,22 @@ Mappings:
       Identifier: "nlpjsResourceServer"
       ScopeName: "TrainingApp.admin"
 
+Parameters:
+  AdminEmail:
+    Type: String
+
 Resources:
-# --- Cognito resources
+  # --- Cognito resources
   NLPCognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: True
+        InviteMessageTemplate:
+          EmailMessage: 'Your NLP.js admin username is {username} and the temporary password is {####}'
+          EmailSubject: 'Your temporary password for NLP.js Training Application'
+      AutoVerifiedAttributes:
+        - email
 
   NLPCognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
@@ -58,6 +67,19 @@ Resources:
       Scopes:
         - ScopeName: !FindInMap [ResourceServer, Configuration, ScopeName]
           ScopeDescription: "API endpoint to configure and test the NLP.js training app"
+
+  CognitoUserPoolAdmin:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      Username: admin
+      DesiredDeliveryMediums:
+        - EMAIL
+      UserPoolId:
+        Ref: NLPCognitoUserPool
+      UserAttributes:
+        - Name: email
+          Value:
+            Ref: AdminEmail
 
 # --- Outputs section
 Outputs:
