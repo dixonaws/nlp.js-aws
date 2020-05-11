@@ -7,7 +7,6 @@ Mappings:
       Identifier: "nlpjsResourceServer"
       ScopeName: "TrainingApp.admin"
 
-
 Resources:
 # --- Cognito resources
   NLPCognitoUserPool:
@@ -32,22 +31,17 @@ Resources:
         - openid
         - aws.cognito.signin.user.admin
         - profile
-        # - !Ref NLPUserPoolResourceServer
-        # - !Join ["/", [!Ref NLPUserPoolResourceServer, !GetAtt NLPUserPoolResourceServer.Scopes.ScopeName] ]
-        # - "https://nlpjsapigatewayendpoint.com/dev/TrainingApp.Configure"
-        # - !Join ["/", [!FindInMap ["ResourceServer", "General", "Identifier"], [!FindInMap ["ResourceServer", "General", "ScopeName"] ]]]
-        # todo: generate the AllowedAuthScope from variables in this template. This the proper place to allow a custom scope
-        - nlpjsResourceServer/TrainingApp.Configure
+        - !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
-        # - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/index.html"] ]
         - !Join ["", ["https://", "nlpjscloudfrontdomainname.cloudfront.net", "/index.html"] ]
+        # todo: insert the callback url of the landing page in the training app
       ClientName: nlpjswebauth
       GenerateSecret: false
       LogoutURLs:
-        # - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/logout.html"] ]
         - !Join ["", ["https://", "nlpjscloudfrontdomainname.cloudfront.net", "/logout.html"] ]
-        # todo: modify the above join statement to insert the real cloudfont domain name
+        # todo: modify the above join statement to insert the real cloudfont domain name as output from base template
+        # todo: create a dependency on the cloudfront distribution
       SupportedIdentityProviders:
         - COGNITO
       UserPoolId: !Ref NLPCognitoUserPool
@@ -55,31 +49,27 @@ Resources:
   NLPUserPoolResourceServer:
     Type: AWS::Cognito::UserPoolResourceServer
     Properties:
-      #Identifier: [!FindInMap ["ResourceServer", "General", "Identifier"]]
-      Identifier: "nlpjsResourceServer"
+      Identifier: !FindInMap [ResourceServer, Configuration, Identifier]
       Name: "NLPJS Training App API"
-      Scopes:
-        - ScopeName: "TrainingApp.Configure"
-          ScopeDescription: "API endpoint to configure and test the NLP.js training app"
-
       UserPoolId: !Ref NLPCognitoUserPool
+      Scopes:
+        - ScopeName: !FindInMap [ResourceServer, Configuration, ScopeName]
+          ScopeDescription: "API endpoint to configure and test the NLP.js training app"
 
 # --- Outputs section
 Outputs:
+  CognitoUserPool:
+    Description: User pool for the training application
+    Value: !Ref NLPCognitoUserPool
+
   Identifier:
     Description: Identifier
-    Value: !FindInMap
-      - ResourceServer
-      - Configuration
-      - Identifier
+    Value: !FindInMap [ResourceServer, Configuration, Identifier]
 
   ScopeName:
     Description: ScopeName
-    Value: !FindInMap
-      - ResourceServer
-      - Configuration
-      - ScopeName
+    Value: !FindInMap [ResourceServer, Configuration, ScopeName]
 
   AllowedCustomScope:
     Description: Combined custom scope
-    Value: !Join ["/", ["https://", "nlpjscloudfrontdomainname.cloudfront.net", "/logout.html"] ]
+    Value: !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
