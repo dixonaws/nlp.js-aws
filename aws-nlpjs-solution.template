@@ -548,3 +548,8 @@ Outputs:
     Description: Combined custom scope
     Value: !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
 
+  SigninUrl:
+    Description: URL for Cognito Signin
+    Value: !Join ["", ["https://", !Ref 'AWS::StackName', ".auth.us-west-2.amazoncognito.com/login?client_id=", !Ref NLPCognitoUserPoolClient, "&response_type=token&scope=aws.cognito.signin.user.admin+email+", !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ], "+openid+phone+profile&redirect_uri=", !Join ["", [ "https://", !GetAtt CloudFrontDistribution.DomainName , "/auth.html"] ] ] ]
+
+    
