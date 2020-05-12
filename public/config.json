@@ -1,0 +1,4 @@
+{
+  "signin_url": "https://signin.example.com",
+  "signout_url": "https://example.com/signout.html"
+}

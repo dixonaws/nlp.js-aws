@@ -23,8 +23,10 @@ def lambda_handler(event, context):
 
     str_dest_local_tmp_file="/tmp/TrainingAppPackage.zip"
     str_swagger2_file = "/tmp/public/swagger2.json"
+    str_config_file="/tmp/public/config.json"
     str_new_basepath=event["ResourceProperties"]["NewBaseApiPath"]
     str_training_app_deployment_bucket=event["ResourceProperties"]["DestBucket"]
+    str_new_signin_url=event["ResourceProperties"]["SigninUrl"]
     str_os = os.name
 
     print("OS is " + str_os)
@@ -68,6 +70,18 @@ def lambda_handler(event, context):
         print("Writing new swagger2.json file with " + str_new_basepath + "...", end="")
         json.dump(dict_swagger_data, swagger_file)
         print(" done.")
+
+    # adjust /tmp/public/.env with the SigninUrl
+    with open(str_config_file, 'r') as config_file:
+        dict_config_data = json.load(config_file)
+        print("Current SIGNIN_URL in config is: " + str(dict_config_data["signin_url"]))
+        dict_config_data["signin_url"] = str_new_signin_url
+
+    with open(str_config_file, 'w') as config_file:
+        print("Writing new config file with " + str_config_file + "...", end="")
+        json.dump(dict_config_data, config_file)
+        print(" done.")
+
 
     # upload /tmp/public to training app bucket
     deploy_training_app("/tmp/public", str_training_app_deployment_bucket)

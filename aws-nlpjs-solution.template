@@ -13,7 +13,7 @@ Mappings:
 
 Parameters:
   AdminEmail:
-    Description: Enter a valid email address to recieve the initial admin password for the Training Application
+    Description: Enter a valid email address to receive the initial admin password for the Training Application
     Type: String
 
 Resources:
@@ -77,7 +77,7 @@ Resources:
 
   InvokeDeployTrainingApp:
     Type: Custom::InvokeDeployTrainingApp
-    DependsOn: TrainingAppBucket
+#    DependsOn: TrainingAppBucket
     DeletionPolicy: Delete
     Properties:
       ServiceToken: !GetAtt CustomResource.Arn
@@ -85,10 +85,11 @@ Resources:
       SrcPath: !FindInMap ["SourceCode", "General", "KeyPrefix"]
       TrainingAppPackage: nlpjs-trainingapp.zip
       NewBaseApiPath: !Join ["", ["https://", Ref: ApiGatewayRestApi, ".execute-api.", Ref: "AWS::Region", ".amazonaws.com/dev/api"]]
+      SigninUrl: !Join ["", ["https://", !Ref 'AWS::StackName', ".auth.us-west-2.amazoncognito.com/login?client_id=", !Ref NLPCognitoUserPoolClient, "&response_type=token&scope=aws.cognito.signin.user.admin+email+", !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ], "+openid+phone+profile&redirect_uri=", !Join ["", [ "https://", !GetAtt CloudFrontDistribution.DomainName , "/auth.html"] ] ] ]
       DestBucket: !Ref TrainingAppBucket
 
   CustomResource:
-    DependsOn: TrainingAppBucket
+#    DependsOn: TrainingAppBucket
     Type: AWS::Lambda::Function
     Properties:
       Description: CFN Lambda backed custom resource to deploy assets to s3
@@ -301,7 +302,7 @@ Resources:
         Comment: !Sub 'CloudFront OAI for nlp.js training app hosting bucket'
 
   CloudFrontDistribution:
-    DependsOn: InvokeDeployTrainingApp
+#    DependsOn: InvokeDeployTrainingApp
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
