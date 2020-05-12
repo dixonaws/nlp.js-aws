@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: (SOxxxx) - The AWS CloudFormation template for deployment of the nlp.js solution. Version v1.0.
+Description: (SOxxxx) - The AWS CloudFormation template for deployment of the nlp.js solution. v1.0, May 2020.
 
 Mappings:
   SourceCode:
@@ -13,6 +13,7 @@ Mappings:
 
 Parameters:
   AdminEmail:
+    Description: Enter a valid email address to recieve the initial admin password for the Training Application
     Type: String
 
 Resources:
@@ -203,7 +204,10 @@ Resources:
         - RootResourceId
       RestApiId: !Ref ApiGatewayRestApi
       ApiKeyRequired: false
-      AuthorizationType: NONE
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref APIGatewayCognitoAuthorizer
+      AuthorizationScopes:
+        - !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
       Integration:
         IntegrationHttpMethod: POST
         Type: AWS_PROXY
@@ -246,6 +250,17 @@ Resources:
           - ':'
           - !Ref ApiGatewayRestApi
           - /*/*
+
+  APIGatewayCognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      Name: NlpjsCognitoAuthorizer
+      ProviderARNs:
+        - !GetAtt NLPCognitoUserPool.Arn
+      RestApiId: !Ref ApiGatewayRestApi
+      Type: COGNITO_USER_POOLS
 
   # --- S3 resources
 
@@ -448,15 +463,14 @@ Resources:
         WriteCapacityUnits: 1
 
   # --- Cognito resources
-  # --- Cognito resources
   NLPCognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: True
         InviteMessageTemplate:
-          EmailMessage: 'Your NLP.js admin username is {username} and the temporary password is {####}'
-          EmailSubject: 'Your temporary password for NLP.js Training Application'
+          EmailMessage: "Your NLP.js admin username is {username} and the temporary password is {####}. Refer to the Cloudformation Stack's outputs for the TrainingAppUrl to login and access the application."
+          EmailSubject: "Your temporary password for NLP.js Training Application"
       AutoVerifiedAttributes:
         - email
 
@@ -552,4 +566,3 @@ Outputs:
     Description: URL for Cognito Signin
     Value: !Join ["", ["https://", !Ref 'AWS::StackName', ".auth.us-west-2.amazoncognito.com/login?client_id=", !Ref NLPCognitoUserPoolClient, "&response_type=token&scope=aws.cognito.signin.user.admin+email+", !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ], "+openid+phone+profile&redirect_uri=", !Join ["", [ "https://", !GetAtt CloudFrontDistribution.DomainName , "/auth.html"] ] ] ]
 
-    
