@@ -27,8 +27,9 @@ Based on https://github.com/axa-group/nlp.js-app
   <!--te-->
 
 ## Installation
-To deploy in AWS, follow these steps:
+To deploy in AWS, follow these steps (tested on MacOS 10.15.5). You may also use a Linux machine to follow these steps:
 ### 1. Adjust the Cloudformation template  
+Open aws-nlpjs-solution.tempate and look for the Mappings block as below. Adjust the S3Bucket and Prefix values to the bucket that you will create in Step 2. 
 ```yaml
 Mappings:
     SourceCode:
@@ -37,14 +38,30 @@ Mappings:
             KeyPrefix: "nlpjs/v1.0"
 ```
 
-Create an S3 bucket and a directory within it to store the source code for this solution.
-Copy the following files to that directory:
+### 2. Copy the source source files in S3
+####a. Create an S3 bucket 
+Create a bucket and a directory within it to store the source code for this solution.
+
+####b. Build the source files
+run build.sh to generate the source files (lambda_function.zip and nlpjs-trainingapp.zip) /dist. You can then 
+
+####c. Copy the source files to your S3 bucket 
+Copy the following files to the nlpjs/v1.0 directory:
 - lambda_function.zip: Lambda deployment package for the custom resource helper
 - nlpjs-trainingapp.zip: source code for the training application
 
-### 2. Deploy the cloudformation template
-Per usual in AWS. Tested in us-east-1
+Note: You can use the publish.sh script to copy the source files to the appropriate bucket. Adjust the $NLPSRCBUCKET variable in the publish.sh script before running.
 
+### 3. Deploy the cloudformation template
+Per usual in AWS. Alternatively, you can use the launch_solution.sh script to launch the stack for you. Adjust the parameters for AWS_REGION and ADMIN_EMAIL before running the script. The script will name the stack nlpjs-ABCD, where abcd is a random 4 character string. launch-secure-solution.sh will launch a Cloudformation template that includes authorization for the Training Application.   
+
+The stack will deploy in 5-10 minutes. The Cognito service will send an email to ADMI_EMAIL in order to sign in to the Training Application. Tested in us-east-1.
+
+#### 4. Access the Training Application
+Check the output of the Cloudformation stack to find the signin URL and the URL for the Training Application.
+
+#### 5. (optional) Deleting the stack
+Among other things, the stack will create an S3 bucket and a Cloudfront distribution. By default, S3 buckets are not deleted with the stack. You must manually empty and delete the S3 bucket in order to successfully delete the Cloudformatio stack.  
 
 ## Example of use
 You can create an agent:
