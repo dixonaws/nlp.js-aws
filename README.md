@@ -53,7 +53,7 @@ Copy the following files to the nlpjs/v1.0 directory:
 Note: You can use the publish.sh script to copy the source files to the appropriate bucket. Adjust the $NLPSRCBUCKET variable in the publish.sh script before running.
 
 ### 3. Deploy the cloudformation template
-Per usual in AWS. Alternatively, you can use the launch_solution.sh script to launch the stack for you. Adjust the parameters for AWS_REGION and ADMIN_EMAIL before running the script. The script will name the stack nlpjs-ABCD, where abcd is a random 4 character string. launch-secure-solution.sh will launch a Cloudformation template that includes authorization for the Training Application.   
+Per usual in AWS. Alternatively, you can use the launch_solution.sh script to launch the stack for you. Adjust the parameters for AWS_REGION and ADMIN_EMAIL before running the script. The script will name the stack nlpjs-$1, where $1 is the first argument to the script. launch-secure-solution.sh will launch a Cloudformation template that includes authorization for the Training Application. 
 
 The stack will deploy in 5-10 minutes. The Cognito service will send an email to ADMI_EMAIL in order to sign in to the Training Application. Tested in us-east-1.
 
