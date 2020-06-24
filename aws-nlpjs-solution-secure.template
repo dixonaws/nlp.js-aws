@@ -1,3 +1,4 @@
+
 AWSTemplateFormatVersion: "2010-09-09"
 Description: (SOxxxx) - The AWS CloudFormation template for deployment of the nlp.js solution. v1.0, May 2020.
 
@@ -179,7 +180,10 @@ Resources:
       ResourceId: !Ref ApiGatewayResourceProxyVar
       RestApiId: !Ref ApiGatewayRestApi
       ApiKeyRequired: false
-      AuthorizationType: NONE
+      AuthorizationType: COGNITO_USER_POOLS
+        AuthorizerId: !Ref APIGatewayCognitoAuthorizer
+        AuthorizationScopes:
+          - !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
       Integration:
         IntegrationHttpMethod: POST
         Type: AWS_PROXY
@@ -498,13 +502,11 @@ Resources:
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
         - !Join ["", [ "https://", !GetAtt CloudFrontDistribution.DomainName , "/auth.html"] ]
-        # todo: insert the callback url of the landing page in the training app
       ClientName: nlpjswebauth
       GenerateSecret: false
       LogoutURLs:
         - !Join ["", ["https://", !GetAtt CloudFrontDistribution.DomainName, "/logout.html"] ]
-        # todo: modify the above join statement to insert the real cloudfont domain name as output from base template
-        # todo: create a dependency on the cloudfront distribution
+
       SupportedIdentityProviders:
         - COGNITO
       UserPoolId: !Ref NLPCognitoUserPool
@@ -565,5 +567,5 @@ Outputs:
 
   SigninUrl:
     Description: URL for Cognito Signin
-    Value: !Join ["", ["https://", !Ref 'AWS::StackName', ".auth.us-west-2.amazoncognito.com/login?client_id=", !Ref NLPCognitoUserPoolClient, "&response_type=token&scope=aws.cognito.signin.user.admin+email+", !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ], "+openid+phone+profile&redirect_uri=", !Join ["", [ "https://", !GetAtt CloudFrontDistribution.DomainName , "/auth.html"] ] ] ]
+    Value: !Join ["", ["https://", !Ref 'AWS::StackName', ".auth.", Ref: "AWS::Region", ".amazoncognito.com/login?client_id=", !Ref NLPCognitoUserPoolClient, "&response_type=token&scope=aws.cognito.signin.user.admin+email+", !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ], "+openid+phone+profile&redirect_uri=", !Join ["", [ "https://", !GetAtt CloudFrontDistribution.DomainName , "/auth.html"] ] ] ]
 

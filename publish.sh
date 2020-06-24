@@ -3,7 +3,7 @@
 # publish the source files in dist/ to S3
 # this script should be run from the root of the repository
 
-NLPSRCBUCKET="s3://dixonaws-solutions-us-west-2"
+NLPSRCBUCKET="s3://dixonaws-solutions-us-east-1"
 
 # deploy dist to s3 (make available to Lambda custom-resource helper function)
 echo "Publishing source files to $NLPSRCBUCKET... "
