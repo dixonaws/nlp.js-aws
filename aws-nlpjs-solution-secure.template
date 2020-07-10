@@ -181,9 +181,9 @@ Resources:
       RestApiId: !Ref ApiGatewayRestApi
       ApiKeyRequired: false
       AuthorizationType: COGNITO_USER_POOLS
-        AuthorizerId: !Ref APIGatewayCognitoAuthorizer
-        AuthorizationScopes:
-          - !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
+      AuthorizerId: !Ref APIGatewayCognitoAuthorizer
+      AuthorizationScopes:
+        - !Join ["/", [ !FindInMap [ResourceServer, Configuration, Identifier], !FindInMap [ResourceServer, Configuration, ScopeName] ] ]
       Integration:
         IntegrationHttpMethod: POST
         Type: AWS_PROXY
